@@ -59,7 +59,7 @@ defmodule Sepa do
 
   """
   def check_iban(iban) do
-    Sepa.Nif.check_iban(String.to_charlist(iban))
+    Sepa.Nif.check_iban(iban)
   end
 
   @doc """
@@ -72,9 +72,7 @@ defmodule Sepa do
 
   """
   def get_bank_name(bic) do
-    with {:ok, bank_name} <- Sepa.Nif.bic_get_bank_name(String.to_charlist(bic)) do
-      {:ok, List.to_string(bank_name)}
-    end
+    Sepa.Nif.bic_get_bank_name(bic)
   end
 
   @doc """
@@ -89,13 +87,6 @@ defmodule Sepa do
 
   """
   def convert_iban(country, accounts, bank_id) do
-    with {:ok, iban, status} <-
-           Sepa.Nif.iban_convert(
-             String.to_charlist(country),
-             String.to_charlist(accounts),
-             String.to_charlist(bank_id)
-           ) do
-      {:ok, List.to_string(iban), status}
-    end
+    Sepa.Nif.iban_convert(<<country::binary, 0>>, <<accounts::binary, 0>>, <<bank_id::binary, 0>>)
   end
 end

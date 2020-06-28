@@ -77,9 +77,9 @@ defmodule Sepa.Nif do
   @doc """
   ## Examples
 
-      iex> Sepa.Nif.check_iban('DE22380200904030000000')
+      iex> Sepa.Nif.check_iban("DE22380200904030000000")
       true
-      iex> Sepa.Nif.check_iban('DE22380200904030000001')
+      iex> Sepa.Nif.check_iban("DE22380200904030000001")
       false
 
   """
@@ -90,9 +90,9 @@ defmodule Sepa.Nif do
   @doc """
   ## Examples
 
-      iex> Sepa.Nif.bic_get_bank_name('BYLADEM1ERH')
-      {:ok, 'STADT-UND KREISSPARKASSE ERLANGEN HOECHSTADT HERZOGENAURACH'}
-      iex> Sepa.Nif.bic_get_bank_name('BYLADAM1ERH')
+      iex> Sepa.Nif.bic_get_bank_name("BYLADEM1ERH")
+      {:ok, "STADT-UND KREISSPARKASSE ERLANGEN HOECHSTADT HERZOGENAURACH"}
+      iex> Sepa.Nif.bic_get_bank_name("BYLADAM1ERH")
       :error
 
   """
@@ -103,11 +103,11 @@ defmodule Sepa.Nif do
   @doc """
   ## Examples
 
-      iex> Sepa.Nif.iban_convert('DE', '7325022', '26580070')
-      {:ok, 'DE32265800700732502200', 1}
-      iex> Sepa.Nif.iban_convert('DE', '40033086', '30020500')
-      {:ok, 'DE02500202000040033086', 15}
-      iex> Sepa.Nif.iban_convert('DE', '123', '123')
+      iex> Sepa.Nif.iban_convert(<<"DE", 0>>, <<"7325022", 0>>, <<"26580070", 0>>)
+      {:ok, "DE32265800700732502200", 1}
+      iex> Sepa.Nif.iban_convert(<<"DE", 0>>, <<"40033086", 0>>, <<"30020500", 0>>)
+      {:ok, "DE02500202000040033086", 15}
+      iex> Sepa.Nif.iban_convert(<<"DE", 0>>, <<"123", 0>>, <<"123", 0>>)
       :error
 
   """

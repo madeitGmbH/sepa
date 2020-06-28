@@ -286,7 +286,7 @@ to_xml(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 static ERL_NIF_TERM
 check_iban(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
-  char iban[SEPA_IBAN_MAXLENGTH + 1];
+  ErlNifBinary iban;
   sepa_lookup_status_t ls;
 
   if (argc != 1)
@@ -294,12 +294,14 @@ check_iban(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     return enif_make_badarg(env);
   }
 
-  if (enif_get_string(env, argv[0], iban, sizeof(iban), ERL_NIF_LATIN1) < 0)
+  if (enif_inspect_binary(env, argv[0], &iban) == 0)
   {
     return enif_make_badarg(env);
   }
 
-  ls = sepa_iban_check(iban);
+  ls = sepa_iban_check((char *)iban.data);
+
+  enif_release_binary(&iban);
 
   if (ls == SEPA_LOOKUP_OK)
   {
@@ -314,7 +316,8 @@ check_iban(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 static ERL_NIF_TERM
 bic_get_bank_name(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
-  char bic[SEPA_BIC_LENGTH + 1];
+  ErlNifBinary bic;
+  ErlNifBinary bank_name;
   sepa_bankinfo_t *bank;
   sepa_status_t st;
 
@@ -323,17 +326,22 @@ bic_get_bank_name(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     return enif_make_badarg(env);
   }
 
-  if (enif_get_string(env, argv[0], bic, sizeof(bic), ERL_NIF_LATIN1) < 0)
+  if (enif_inspect_binary(env, argv[0], &bic) == 0)
   {
     return enif_make_badarg(env);
   }
 
-  st = sepa_bic_getBank(bic, &bank);
+  st = sepa_bic_getBank((const char *)bic.data, &bank);
+
+  enif_release_binary(&bic);
+
   if (st == SEPA_OK)
   {
-    ERL_NIF_TERM ret = enif_make_string(env, bank->name, ERL_NIF_LATIN1);
+    enif_alloc_binary(strlen(bank->name), &bank_name);
+    memcpy(bank_name.data, bank->name, strlen(bank->name));
     free(bank);
-    return enif_make_tuple2(env, enif_make_atom(env, "ok"), ret);
+    ERL_NIF_TERM term = enif_make_binary(env, &bank_name);
+    return enif_make_tuple2(env, enif_make_atom(env, "ok"), term);
   }
   else
   {
@@ -344,11 +352,12 @@ bic_get_bank_name(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 static ERL_NIF_TERM
 iban_convert(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
-  char cc[SEPA_IBAN_MAXLENGTH + 1];
-  char accountid[SEPA_IBAN_MAXLENGTH + 1];
-  char bankid[SEPA_IBAN_MAXLENGTH + 1];
+  ErlNifBinary country_code;
+  ErlNifBinary account_id;
+  ErlNifBinary bank_id;
+  ErlNifBinary iban;
   sepa_lookup_status_t ls;
-  char iban[SEPA_IBAN_MAXLENGTH + 1];
+  char iban_val[SEPA_IBAN_MAXLENGTH + 1];
   char status;
 
   if (argc != 3)
@@ -356,28 +365,39 @@ iban_convert(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     return enif_make_badarg(env);
   }
 
-  if (enif_get_string(env, argv[0], cc, sizeof(cc), ERL_NIF_LATIN1) < 0)
+  if (enif_inspect_binary(env, argv[0], &country_code) == 0)
   {
     return enif_make_badarg(env);
   }
 
-  if (enif_get_string(env, argv[1], accountid, sizeof(accountid), ERL_NIF_LATIN1) < 0)
+  if (enif_inspect_binary(env, argv[1], &account_id) == 0)
   {
     return enif_make_badarg(env);
   }
 
-  if (enif_get_string(env, argv[2], bankid, sizeof(bankid), ERL_NIF_LATIN1) < 0)
+  if (enif_inspect_binary(env, argv[2], &bank_id) == 0)
   {
     return enif_make_badarg(env);
   }
 
-  ls = sepa_iban_convert((char *)&cc, (char *)&accountid, (char *)&bankid, (char *)&iban, &status);
+  ls = sepa_iban_convert(
+      (const char *)country_code.data,
+      (const char *)account_id.data,
+      (const char *)bank_id.data,
+      (char *)&iban_val,
+      &status);
+
+  enif_release_binary(&country_code);
+  enif_release_binary(&account_id);
+  enif_release_binary(&bank_id);
 
   if (ls == SEPA_LOOKUP_OK)
   {
-    ERL_NIF_TERM ret1 = enif_make_string(env, iban, ERL_NIF_LATIN1);
-    ERL_NIF_TERM ret2 = enif_make_long(env, status);
-    return enif_make_tuple3(env, enif_make_atom(env, "ok"), ret1, ret2);
+    enif_alloc_binary(strlen(iban_val), &iban);
+    memcpy(iban.data, iban_val, strlen(iban_val));
+    ERL_NIF_TERM term_1 = enif_make_binary(env, &iban);
+    ERL_NIF_TERM term_2 = enif_make_long(env, status);
+    return enif_make_tuple3(env, enif_make_atom(env, "ok"), term_1, term_2);
   }
   else
   {
